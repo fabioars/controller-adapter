@@ -1,0 +1,40 @@
+menu "PS3 Xbox Adapter"
+
+    config ADAPTER_WIFI_ENABLE
+        bool "Start Wi-Fi network with the configuration page"
+        default y
+        help
+            Creates a Wi-Fi access point that serves a page to pair/forget controllers.
+            Wi-Fi shares the radio with Bluetooth, so turn it off (from the page) while playing.
+
+    config ADAPTER_WIFI_SSID
+        string "Wi-Fi network name"
+        default "PS3-Xbox-Adapter"
+        depends on ADAPTER_WIFI_ENABLE
+
+    config ADAPTER_WIFI_PASSWORD
+        string "Wi-Fi password (8-63 chars, empty = open network)"
+        default "ps3adapter"
+        depends on ADAPTER_WIFI_ENABLE
+
+    config ADAPTER_WIFI_CHANNEL
+        int "Wi-Fi channel"
+        range 1 13
+        default 6
+        depends on ADAPTER_WIFI_ENABLE
+
+    config ADAPTER_STATUS_LED
+        bool "Show status on the board's RGB LED (WS2812)"
+        default y
+        help
+            Blue blinking = searching for a controller, green = controller connected and PS3 connected,
+            yellow = controller connected but PS3 not (yet) connected.
+
+    config ADAPTER_STATUS_LED_GPIO
+        int "RGB LED GPIO"
+        default 48
+        depends on ADAPTER_STATUS_LED
+        help
+            48 on most ESP32-S3 N16R8 DevKitC-style boards. Some (DevKitC-1 v1.1) use 38.
+
+endmenu

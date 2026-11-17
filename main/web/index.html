@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controller Adapter</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #fff; --text: #16181d; --muted: #6b7180; --line: #e3e5ea;
+    --accent: #107c10; --accent-text: #fff; --danger: #c4314b; --warn: #b7791f;
+    --chip: #eceef2; --chip-on: #107c10; --chip-on-text: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1114; --card: #191c21; --text: #e9ebef; --muted: #8d94a3; --line: #2a2e36;
+      --accent: #3fb950; --accent-text: #0b0d10; --danger: #f0627a; --warn: #e3b341;
+      --chip: #252930; --chip-on: #3fb950; --chip-on-text: #0b0d10;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 16px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 14px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+  .pill.ok { color: var(--accent); }
+  .player + .player { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .state { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; min-width: 0; }
+  .state span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .num { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--chip); color: var(--muted); }
+  .num.ok { background: var(--accent); color: var(--accent-text); }
+  .num.wait { background: var(--warn); color: var(--accent-text); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .4; } }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .hint { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--chip); font-size: 14px; }
+  .battery { height: 5px; background: var(--chip); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .battery > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  button {
+    font: inherit; font-weight: 600; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+  }
+  button.small { padding: 6px 10px; font-size: 13px; flex: none; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  button.danger { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: default; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 8px 16px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: var(--accent-text); }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+  li:first-child { border-top: 0; padding-top: 0; }
+  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .empty { color: var(--muted); font-size: 14px; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .chip { min-width: 34px; text-align: center; padding: 3px 7px; border-radius: 6px; background: var(--chip); color: var(--muted); font-size: 12px; font-weight: 600; }
+  .chip.on { background: var(--chip-on); color: var(--chip-on-text); }
+  .analog { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .stick { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--line); position: relative; margin: 0 auto 4px; }
+  .stick > div { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); position: absolute; left: 24px; top: 24px; }
+  .label { text-align: center; color: var(--muted); font-size: 12px; }
+  .trig { height: 8px; background: var(--chip); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+  .trig > div { height: 100%; background: var(--accent); width: 0; }
+  .banner { padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+  #offline { display: none; background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Controller Adapter</h1>
+    <div class="pills"><span class="pill" id="usb">Console: —</span><span class="pill" id="clients">Wi-Fi</span></div>
+  </header>
+  <div class="banner" id="offline">Can't reach the adapter. Check you're still on its Wi-Fi network.</div>
+
+  <section class="card">
+    <h2 id="players-title">Controller</h2>
+    <div id="players"></div>
+    <div class="hint" id="hint" hidden>
+      Hold the <b>pair button</b> on top of the Xbox controller (next to the USB port) until the Xbox logo flashes quickly.
+      A controller paired before reconnects when you press its Xbox button.
+    </div>
+    <div class="actions"><button class="primary" id="pair">Pair new controller</button></div>
+  </section>
+
+  <section class="card">
+    <h2>Console</h2>
+    <div class="seg" id="console-seg">
+      <button data-mode="auto">Auto</button><button data-mode="ps3">PS3</button><button data-mode="x360">Xbox 360</button>
+    </div>
+    <div class="sub" id="console-note"></div>
+  </section>
+
+  <section class="card">
+    <h2>Players</h2>
+    <div class="seg" id="players-seg"></div>
+    <div class="sub" id="players-note"></div>
+  </section>
+
+  <section class="card">
+    <h2>Saved controllers</h2>
+    <ul id="bonds"></ul>
+    <div class="actions"><button class="danger" id="forget-all">Forget all</button></div>
+  </section>
+
+  <section class="card">
+    <h2>Wi-Fi</h2>
+    <div class="sub" style="margin-top:0">Wi-Fi shares the radio with Bluetooth and can add input lag. Turn it off before playing; it comes back the next time the console powers the adapter.</div>
+    <div class="actions"><button class="danger" id="wifi-off">Turn off Wi-Fi</button></div>
+  </section>
+</main>
+<script>
+// Must match PAD_* in main/pad_state.h
+const BUTTONS = [
+  ["✕", 1 << 0], ["○", 1 << 1], ["□", 1 << 2], ["△", 1 << 3],
+  ["L1", 1 << 4], ["R1", 1 << 5], ["L3", 1 << 6], ["R3", 1 << 7],
+  ["SELECT", 1 << 8], ["START", 1 << 9], ["PS", 1 << 10],
+  ["↑", 1 << 11], ["↓", 1 << 12], ["←", 1 << 13], ["→", 1 << 14],
+];
+const MAX_PLAYERS = 4;
+const $ = (id) => document.getElementById(id);
+let stopped = false, busy = false, playerEls = [], lastBonds = "", playersMax = 0, last = null;
+
+async function post(path, confirmText) {
+  if (confirmText && !confirm(confirmText)) return false;
+  try { await fetch(path, { method: "POST" }); } catch (e) {}
+  refresh();
+  return true;
+}
+
+$("pair").onclick = () => {
+  const full = last && last.players.every(p => p.connected);
+  post("/api/pair", full ? (last.players_max > 1
+    ? `All ${last.players_max} players are connected. Player ${last.players_max} will be disconnected to make room. Continue?`
+    : "The current controller will be disconnected. Continue?") : null);
+};
+$("forget-all").onclick = () => post("/api/forget_all", "Forget all saved controllers? They will need to be paired again.");
+$("wifi-off").onclick = async () => {
+  if (!await post("/api/wifi_off", "Turn off Wi-Fi? This page will stop working until the adapter is power-cycled.")) return;
+  stopped = true;
+  document.querySelector("main").innerHTML = "<h1>Wi-Fi turned off</h1><p class='sub'>Unplug and replug the adapter (or restart the console) to bring the configuration page back.</p>";
+};
+
+// Console selector: auto-detect, or force PS3 (DualShock 3) / Xbox 360 (wired controller).
+const CONSOLE_NAMES = { ps3: "PS3", x360: "Xbox 360" };
+$("console-seg").querySelectorAll("button").forEach(btn => btn.onclick = async () => {
+  const mode = btn.dataset.mode;
+  if (!last || mode === last.output) return;
+  const what = mode === "auto" ? "detect the console automatically" : `act as a ${CONSOLE_NAMES[mode]} controller`;
+  if (!await post(`/api/output?mode=${mode}`, `Make the adapter ${what}? It restarts and the console sees it re-plugged.`)) return;
+  stopped = true;
+  $("console-note").textContent = "Restarting…";
+  setTimeout(() => location.reload(), 6000);
+});
+
+function renderConsole(s) {
+  const name = CONSOLE_NAMES[s.console];
+  $("console-seg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.mode === s.output));
+  let note = s.output === "auto"
+    ? (s.console_confirmed ? `Detected ${name}: acting as its wired controller.` : `Trying ${name}… (switches to the other console if this isn't it)`)
+    : `Acting as a ${name} controller.`;
+  if (s.console === "x360" && s.usb) {
+    note += s.x360_auth ? " Authenticated with the Xbox 360." : " Waiting for the Xbox 360 to authenticate…";
+    if (s.x360_player) note += ` Console assigned player ${s.x360_player}.`;
+  }
+  $("console-note").textContent = note;
+  $("usb").textContent = s.usb ? `${name} connected` : `${name} not connected`;
+  $("usb").className = "pill" + (s.usb ? " ok" : "");
+}
+
+// Players selector (1 = a single DualShock 3; 2-4 = experimental multi-player).
+$("players-seg").innerHTML = Array.from({ length: MAX_PLAYERS }, (_, i) => `<button data-n="${i + 1}">${i + 1}</button>`).join("");
+$("players-seg").querySelectorAll("button").forEach(btn => btn.onclick = async () => {
+  const n = +btn.dataset.n;
+  if (n === playersMax || (last && last.console === "x360")) return;
+  const warn = n > 1 ? "\n\nMulti-player is experimental: the PS3 may not accept it. If controllers stop working, set it back to 1." : "";
+  if (!await post(`/api/players?n=${n}`, `Set ${n} player${n > 1 ? "s" : ""}? The adapter restarts and the PS3 sees it re-plugged.${warn}`)) return;
+  stopped = true;
+  $("players-note").textContent = "Restarting…";
+  setTimeout(() => location.reload(), 6000);
+});
+
+function buildPlayers(n) {
+  $("players").innerHTML = "";
+  playerEls = [];
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement("div");
+    el.className = "player";
+    el.innerHTML = `
+      <div class="row">
+        <div class="state"><span class="num">${i + 1}</span><span class="title"></span></div>
+        <button class="small disconnect">Disconnect</button>
+      </div>
+      <div class="sub detail"></div>
+      <div class="battery" hidden><div></div></div>
+      <details hidden><summary>Live input (PS3 button names)</summary>
+        <div class="chips">${BUTTONS.map(([b]) => `<span class="chip">${b}</span>`).join("")}</div>
+        <div class="analog">
+          <div><div class="stick"><div class="ls"></div></div><div class="label">Left stick</div></div>
+          <div><div class="stick"><div class="rs"></div></div><div class="label">Right stick</div></div>
+          <div><div class="trig"><div class="l2"></div></div><div class="label">L2</div></div>
+          <div><div class="trig"><div class="r2"></div></div><div class="label">R2</div></div>
+        </div>
+      </details>`;
+    el.querySelector(".disconnect").onclick = () => post(`/api/disconnect?player=${i + 1}`);
+    if (n === 1) el.querySelector("details").open = true;
+    $("players").appendChild(el);
+    playerEls.push(el);
+  }
+}
+
+function stickPos(el, x, y) {
+  el.style.left = (24 + (x - 128) / 128 * 24) + "px";
+  el.style.top = (24 + (y - 128) / 128 * 24) + "px";
+}
+
+function renderPlayer(el, p, scanning, isNextFree) {
+  const q = (sel) => el.querySelector(sel);
+  q(".num").className = "num" + (p.connected ? " ok" : (scanning && isNextFree ? " wait" : ""));
+  q(".title").textContent = p.connected ? (p.name || "Xbox controller") : (scanning && isNextFree ? "Searching…" : "Empty");
+  q(".detail").innerHTML = p.connected
+    ? `<code>${p.addr}</code>` + (p.battery ? ` · battery ${Math.round(p.battery / 255 * 100)}%` : "")
+    : "";
+  q(".detail").hidden = !p.connected;
+  q(".battery").hidden = !(p.connected && p.battery);
+  q(".battery > div").style.width = (p.battery / 255 * 100) + "%";
+  q(".disconnect").hidden = !p.connected;
+  q("details").hidden = !p.connected;
+
+  const inp = p.input;
+  el.querySelectorAll(".chip").forEach((c, i) => c.classList.toggle("on", (inp.buttons & BUTTONS[i][1]) !== 0));
+  stickPos(q(".ls"), inp.lx, inp.ly);
+  stickPos(q(".rs"), inp.rx, inp.ry);
+  q(".l2").style.width = (inp.l2 / 255 * 100) + "%";
+  q(".r2").style.width = (inp.r2 / 255 * 100) + "%";
+}
+
+function render(s) {
+  last = s;
+  renderConsole(s);
+  $("clients").textContent = `Wi-Fi: ${s.wifi_clients} device${s.wifi_clients === 1 ? "" : "s"}`;
+
+  if (s.players_max !== playersMax) {
+    playersMax = s.players_max;
+    buildPlayers(playersMax);
+    $("players-title").textContent = playersMax > 1 ? "Controllers" : "Controller";
+  }
+  const x360 = s.console === "x360";
+  $("players-seg").querySelectorAll("button").forEach(b => {
+    b.classList.toggle("on", +b.dataset.n === (x360 ? 1 : s.players_setting));
+    b.disabled = x360 && +b.dataset.n > 1;
+  });
+  $("players-note").textContent = x360
+    ? "Xbox 360: one controller per adapter (a wired 360 controller is one player)."
+    : playersMax > 1
+      ? `${playersMax} players on one adapter (experimental). Each controller buzzes its player number when it connects.`
+      : "One controller (a regular DualShock 3). 2–4 players on one adapter is experimental.";
+  const nextFree = s.players.findIndex(p => !p.connected);
+  s.players.forEach((p, i) => renderPlayer(playerEls[i], p, s.scanning, i === nextFree));
+  $("hint").hidden = !s.scanning;
+
+  const inUse = s.players.filter(p => p.connected).map(p => p.addr);
+  const key = JSON.stringify(s.bonds) + inUse.join();
+  if (key !== lastBonds) {
+    lastBonds = key;
+    $("bonds").innerHTML = s.bonds.length
+      ? s.bonds.map(b => {
+          const player = s.players.findIndex(p => p.connected && p.addr === b.addr);
+          return `<li><span><code>${b.addr}</code>${player >= 0 ? ` · player ${player + 1}` : ""}</span>
+            <button class="small danger" data-addr="${b.addr}" data-type="${b.type}">Forget</button></li>`;
+        }).join("")
+      : `<li class="empty">None yet. Pair a controller above.</li>`;
+    $("bonds").querySelectorAll("button").forEach(btn => btn.onclick = () =>
+      post(`/api/forget?addr=${btn.dataset.addr}&type=${btn.dataset.type}`, `Forget ${btn.dataset.addr}?`));
+  }
+  $("forget-all").disabled = s.bonds.length === 0;
+}
+
+async function refresh() {
+  if (stopped || busy) return;
+  busy = true;
+  try {
+    const r = await fetch("/api/status", { cache: "no-store" });
+    render(await r.json());
+    $("offline").style.display = "none";
+  } catch (e) {
+    $("offline").style.display = "block";
+  } finally {
+    busy = false;
+  }
+}
+refresh();
+setInterval(refresh, 400);
+</script>
+</body>
+</html>

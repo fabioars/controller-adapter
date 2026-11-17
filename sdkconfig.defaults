@@ -1,0 +1,42 @@
+# Target: ESP32-S3 (native USB OTG + BLE). Set with: idf.py set-target esp32s3
+# Tuned for the common "ESP32-S3 N16R8" boards: 16 MB flash, 8 MB octal PSRAM.
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# 8 MB octal PSRAM ("R8"). If a board turns out to have none, boot continues without it.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Logs go to UART0 (the board's "UART"/"COM" port). The native USB port is
+# taken over by TinyUSB to act as the console controller, so nothing else may use it.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+
+# Bluetooth: controller only; BTstack (via Bluepad32) is the host stack.
+CONFIG_BT_ENABLED=y
+CONFIG_BT_CONTROLLER_ONLY=y
+CONFIG_BTSTACK_AUDIO=n
+
+# Bluepad32
+CONFIG_BLUEPAD32_PLATFORM_CUSTOM=y
+# up to 4 players + 1 spare connection for a controller being rejected
+CONFIG_BLUEPAD32_MAX_DEVICES=5
+# BLE connections + scanning
+CONFIG_BT_CTRL_BLE_MAX_ACT=8
+CONFIG_BLUEPAD32_ENABLE_BLE_BY_DEFAULT=y
+CONFIG_BLUEPAD32_USB_CONSOLE_ENABLE=n
+
+# TinyUSB is configured in main/tusb/tusb_config.h
+
+CONFIG_FREERTOS_HZ=1000
+
+# Partition table sized for 16 MB flash (see partitions.csv)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+# Wi-Fi/BLE radio time-sharing
+CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y
